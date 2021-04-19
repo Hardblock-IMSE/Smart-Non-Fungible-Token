@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-/// @title Harblock - ERC-721 Non-Fungible Token Standard based
-interface Hardblock{
+/// @title smartNFT: Harblock - ERC-721 Non-Fungible Token Standard based
+interface smartNFT{
     /// @dev This emits when ownership of any NFT changes an user.
     ///  This event emits when the user of a token is transfered.
     ///  (`_addressUser` == 0) when a user is unassigned.
