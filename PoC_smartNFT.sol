@@ -239,6 +239,7 @@ contract smartNFT_SC is ERC721,smartNFT{
             return true;
         }else{
             Secure_Token[_tokenId].user = address(0);
+            emit TimeoutAlarm(_tokenId);
             return false;
         }
     }
