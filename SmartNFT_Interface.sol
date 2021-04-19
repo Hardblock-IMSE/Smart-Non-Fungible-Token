@@ -16,6 +16,8 @@ interface smartNFT{
         /// @dev This emits when ownership  any NFT verify a device.
     ///  This event emits when the owner a device finishing the transference.
     event OwnerEngaged(uint256 indexed tokenID);
+    
+    event TimeoutAlarm(uint256 indexed tokenID);
 
     /// @notice This function define how the Smart Device is binded whith a new token
     /// @dev Only the manufacturer of SD account can create a token and will be the first owner of token.
