@@ -32,7 +32,9 @@ contract smartNFT_SC is ERC721,smartNFT{
     
     constructor() {
         manufacturer = msg.sender;
-        tokenCounter = 0;
+        tokenCounter = 1;
+        //introducing a empty token to avoid valid tokenId = 0;
+        Secure_Token.push(Token_Struct(address(0), address(0), address(0), States.waitingForOwner,0,0,0,0,0));
     }
     
     function createToken(address _addressSD, address _addressOwner) public virtual override returns (uint256){
