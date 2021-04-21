@@ -6,7 +6,7 @@ import "./smartNFT_Interface.sol";
 import "./ERC721_Interface.sol";
 
 contract smartNFT_SC is ERC721,smartNFT{
-  
+    
     enum States { waitingForOwner, engagedWithOwner, waitingForUser, engagedWithUser }
     
     address manufacturer;                                   //Address of manufacturer and owner of Smart Contract
@@ -21,9 +21,9 @@ contract smartNFT_SC is ERC721,smartNFT{
         address SD;                                         //Indicate the BCA of the Secure device associated to this token.
         address user;                                       //Indicate who can use this secure device.
         States state;                                       //If blocked (false) then token should be verified by new user or new owner.
-        uint256 hashK_OD;                                  //Hash of Key between owner and device.
-        uint256 hashK_UD;                                  //Hash of Key between user and device.
-        uint256 dataEngage;                            //Public Key to create K_OD or K_UD depending of token state.
+        uint256 hashK_OD;                                   //Hash of Key between owner and device.
+        uint256 hashK_UD;                                   //Hash of Key between user and device.
+        uint256 dataEngagement;                             //Public Key to create K_OD or K_UD depending of token state.
         uint256 timestamp;                                  //Last time device update its proof of live
         uint256 timeout;                                    //timeout to verify a device error.
     }
@@ -33,8 +33,8 @@ contract smartNFT_SC is ERC721,smartNFT{
     constructor() {
         manufacturer = msg.sender;
         tokenCounter = 1;
-        //introducing a empty token to avoid valid tokenId = 0;
         Secure_Token.push(Token_Struct(address(0), address(0), address(0), States.waitingForOwner,0,0,0,0,0));
+
     }
     
     function createToken(address _addressSD, address _addressOwner) public virtual override returns (uint256){
@@ -61,64 +61,76 @@ contract smartNFT_SC is ERC721,smartNFT{
     function setUser(uint256 _tokenId, address _addressUser) public virtual override{
         //Check if sender is the owner of token and the token state.
         require((ownerOfSD[_tokenId] == msg.sender) && (Secure_Token[_tokenId].state >= States.engagedWithOwner));
-        //Only for ensure avoid overflow, for example in address 0.
-        if(userBalance[Secure_Token[_tokenId].user]>0){
-            //update the balance of token assigned to the old user
-            userBalance[Secure_Token[_tokenId].user]--;
+        if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
+            //Only for ensure avoid overflow, for example in address 0.
+            if(userBalance[Secure_Token[_tokenId].user]>0){
+                //update the balance of token assigned to the old user
+                userBalance[Secure_Token[_tokenId].user]--;
+            }
+            ////update the balance of token assigned to the new user
+            userBalance[_addressUser]++;
+            //Assign the new user to the token
+            Secure_Token[_tokenId].user = _addressUser;            
+            //update the state of the token
+            Secure_Token[_tokenId].state = States.waitingForUser;
+            //Erase old key exchange data between device with old UserAssigned
+            Secure_Token[_tokenId].dataEngagement =0;
+            Secure_Token[_tokenId].hashK_UD = 0;
+            emit UserAssigned(_tokenId,_addressUser);
+        }else{
+            Secure_Token[_tokenId].user = address(0);
+            emit TimeoutAlarm(_tokenId);
         }
-        ////update the balance of token assigned to the new user
-        userBalance[_addressUser]++;
-        //Assign the new user to the token
-        Secure_Token[_tokenId].user = _addressUser;            
-        //update the state of the token
-        Secure_Token[_tokenId].state = States.waitingForUser;
-        //Erase old key exchange data between device with old UserAssigned
-        Secure_Token[_tokenId].dataEngage =0;
-        Secure_Token[_tokenId].hashK_UD = 0;
-        Secure_Token[_tokenId].timeout = 0;
-        emit UserAssigned(_tokenId,_addressUser);
     }
     
-    function startOwnerEngage(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_O) public virtual override{
+    function startOwnerEngage(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_O) public virtual override{
         //Check if sender is the Owner of token and the State of token
         require(ownerOfSD[_tokenId] == msg.sender);
-        Secure_Token[_tokenId].dataEngage = _dataEngage;
-        Secure_Token[_tokenId].hashK_OD = _hashK_O;
-        Secure_Token[_tokenId].timeout = block.timestamp;
+        if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
+            Secure_Token[_tokenId].dataEngagement = _dataEngagement;
+            Secure_Token[_tokenId].hashK_OD = _hashK_O;
+        }else{
+            Secure_Token[_tokenId].user = address(0);
+            emit TimeoutAlarm(_tokenId);
+        }
     }
     
     function ownerEngage(uint256 _hashK_D) public virtual override{
         uint256 _tokenId = tokenFromBCA(msg.sender);
         //Check if public key owner-device exist from tokenID of BCA sender
-        require(Secure_Token[_tokenId].dataEngage != 0);
+        require(Secure_Token[_tokenId].dataEngagement != 0);
         require (Secure_Token[_tokenId].hashK_OD == _hashK_D);
         require (Secure_Token[_tokenId].state == States.waitingForOwner);
-        //Erase PK_Owner-Device and time-out
-        Secure_Token[_tokenId].dataEngage = 0;
-        Secure_Token[_tokenId].timeout = 0;
+        //Erase PK_User-Device and update timestamp
+        Secure_Token[_tokenId].dataEngagement = 0;
+        Secure_Token[_tokenId].timestamp = block.timestamp;
         //update the state of token
         Secure_Token[_tokenId].state = States.engagedWithOwner;
         //Send a notification to User and Device
         emit OwnerEngaged(_tokenId);
     }
     
-    function startUserEngage(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_U) public virtual override{
+    function startUserEngage(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_U) public virtual override{
         //Check if sender is the User of token and the State of token
         require(Secure_Token[_tokenId].user == msg.sender);    
-        Secure_Token[_tokenId].dataEngage = _dataEngage;
-        Secure_Token[_tokenId].hashK_UD = _hashK_U;
-        Secure_Token[_tokenId].timeout = block.timestamp;
+        if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
+            Secure_Token[_tokenId].dataEngagement = _dataEngagement;
+            Secure_Token[_tokenId].hashK_UD = _hashK_U;
+        }else{
+            Secure_Token[_tokenId].user = address(0);
+            emit TimeoutAlarm(_tokenId);
+        }
     }
     
     function userEngage(uint256 _hashK_D) public virtual override{
         uint256 _tokenId = tokenFromBCA(msg.sender);
         //Check if public key user-device exist from tokenID of BCA sender
-        require(Secure_Token[_tokenId].dataEngage != 0);
+        require(Secure_Token[_tokenId].dataEngagement != 0);
         require (Secure_Token[_tokenId].hashK_UD == _hashK_D);
         require (Secure_Token[_tokenId].state == States.waitingForUser);
-        //Erase PK_User-Device and time-out
-        Secure_Token[_tokenId].dataEngage = 0;
-        Secure_Token[_tokenId].timeout = 0;
+        //Erase PK_User-Device and update timestamp
+        Secure_Token[_tokenId].dataEngagement = 0;
+        Secure_Token[_tokenId].timestamp = block.timestamp;
         //update the state of token
         Secure_Token[_tokenId].state = States.engagedWithUser;
         //Send a notification to User and Device
@@ -140,7 +152,7 @@ contract smartNFT_SC is ERC721,smartNFT{
     
     function userOfFromBCA(address _addressSD) public virtual override view returns (address){
         return(Secure_Token[tokenIDOfBCA[_addressSD]].user);
-    }
+    }   
     
     function userBalanceOf(address _addressUser) public virtual override view returns (uint256){
         return(userBalance[_addressUser]);
@@ -205,18 +217,22 @@ contract smartNFT_SC is ERC721,smartNFT{
     function transferFrom(address _from, address _to, uint256 _tokenId) public virtual override payable{
         require((ownerOfSD[_tokenId] == msg.sender)||(Secure_Token[_tokenId].approved == msg.sender));
         require(ownerOfSD[_tokenId] == _from);
-        ownerOfSD[_tokenId] = _to;
-        ownerBalance[_from]--;
-        ownerBalance[_to]++;
-        //Secure_Token[_tokenId].approved = address(0);
-        Secure_Token[_tokenId].user = address(0);
-        Secure_Token[_tokenId].state = States.waitingForOwner;
-        //Erase old key exchange data between device with old Owner
-        Secure_Token[_tokenId].dataEngage = 0;
-        Secure_Token[_tokenId].hashK_UD = 0;
-        Secure_Token[_tokenId].hashK_OD = 0;
-        Secure_Token[_tokenId].timeout = block.timestamp;
-        emit Transfer(_from,_to,_tokenId);
+        if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
+            ownerOfSD[_tokenId] = _to;
+            ownerBalance[_from]--;
+            ownerBalance[_to]++;
+            //Secure_Token[_tokenId].approved = address(0);
+            Secure_Token[_tokenId].user = address(0);
+            Secure_Token[_tokenId].state = States.waitingForOwner;
+            //Erase old key exchange data between device with old Owner
+            Secure_Token[_tokenId].dataEngagement = 0;
+            Secure_Token[_tokenId].hashK_UD = 0;
+            Secure_Token[_tokenId].hashK_OD = 0;
+            emit Transfer(_from,_to,_tokenId);
+        }else{
+            Secure_Token[_tokenId].user = address(0);
+            emit TimeoutAlarm(_tokenId);
+        }
     }
 
     function approve(address _approved, uint256 _tokenId) public virtual override payable{
@@ -246,7 +262,7 @@ contract smartNFT_SC is ERC721,smartNFT{
         }
     }
     
-    function timestampUpdate() public virtual override{
+    function updateTimestamp() public virtual override{
         Secure_Token[tokenFromBCA(msg.sender)].timestamp = block.timestamp;
     }
     
