@@ -13,10 +13,11 @@ interface smartNFT{
     ///  This event emits when the user a device finishing the assignment.
     event UserEngaged(uint256 indexed tokenID);
     
-        /// @dev This emits when ownership  any NFT verify a device.
+    /// @dev This emits when ownership  any NFT verify a device.
     ///  This event emits when the owner a device finishing the transference.
     event OwnerEngaged(uint256 indexed tokenID);
     
+    //TODO:Describe new functions and events
     event TimeoutAlarm(uint256 indexed tokenID);
 
     /// @notice This function define how the Smart Device is binded whith a new token
@@ -33,28 +34,16 @@ interface smartNFT{
     /// @param _addressUser The address of the new user.
     function setUser(uint256 _tokenId, address _addressUser) external; 
 
-/*    TODO:Explicar las nuevas funciones.
-    /// @notice This function complete the transference of token to an owner
-    /// @dev Only can be call if the state of token is "waitingForOwner" and only the owner can call this function,
-    ///  This function update the state of token like "engagedWithOwner"
-    ///  and send an event OwnerEngaged with tokenID of token verified.
-    /// @param _tokenId the tokenID of Smart Device verified.
-    function ownerEngage(uint256 _tokenId) external; 
-    
-    /// @notice This function complete the assignment of token to an user
-    /// @dev Only can be call if the state of token is "waitingForUser" and only the user can call this function,
-    ///  This function update the state of token like "engagedWithUser"
-    ///  and send an event UserEngaged with tokenID of token verified.
-    /// @param _tokenId the tokenID of Smart Device verified.
-    function userEngage(uint256 _tokenId) external; 
-*/
-    function startOwnerEngage(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_O) external;
-    function ownerEngage(uint256 _hashK_D) external; 
-    function startUserEngage(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_U) external;
-    function userEngage(uint256 _hashK_D) external; 
+    //TODO:Describe new functions and events
+
+    function startOwnerEngagement(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_O) external;
+    function ownerEngagement(uint256 _hashK_D) external; 
+    function startUserEngagement(uint256 _tokenId, uint256 _dataEngage, uint256 _hashK_U) external;
+    function userEngagement(uint256 _hashK_D) external; 
     function checkTimeout(uint256 _tokenId) external returns (bool);
     function setTimeout(uint256 _tokenId, uint256 _timeout) external; 
-    function timestampUpdate() external; 
+    function updateTimestamp() external; 
+    
     /// @notice This function let obtain the tokenID from an address of Smart Device 
     /// @dev Everybody can call this function, can be execute any code on blockchain only read.
     /// @param _addressSD the addres to obtain it's token ID
