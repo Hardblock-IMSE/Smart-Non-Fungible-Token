@@ -6,8 +6,7 @@ import "./smartNFT_Interface.sol";
 import "./ERC721_Interface.sol";
 
 contract smartNFT_SC is ERC721,smartNFT{
-    
-    enum States { waitingForOwner, engagedWithOwner, waitingForUser, engagedWithUser }
+     enum States { waitingForOwner, engagedWithOwner, waitingForUser, engagedWithUser }
     
     address manufacturer;                                   //Address of manufacturer and owner of Smart Contract
     uint256 tokenCounter;                                   //To give and genuine tokenID based on the number of tokens created.
@@ -83,7 +82,7 @@ contract smartNFT_SC is ERC721,smartNFT{
         }
     }
     
-    function startOwnerEngage(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_O) public virtual override{
+    function startOwnerEngagement(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_O) public virtual override{
         //Check if sender is the Owner of token and the State of token
         require(ownerOfSD[_tokenId] == msg.sender);
         if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
@@ -95,7 +94,7 @@ contract smartNFT_SC is ERC721,smartNFT{
         }
     }
     
-    function ownerEngage(uint256 _hashK_D) public virtual override{
+    function ownerEngagement(uint256 _hashK_D) public virtual override{
         uint256 _tokenId = tokenFromBCA(msg.sender);
         //Check if public key owner-device exist from tokenID of BCA sender
         require(Secure_Token[_tokenId].dataEngagement != 0);
@@ -110,7 +109,7 @@ contract smartNFT_SC is ERC721,smartNFT{
         emit OwnerEngaged(_tokenId);
     }
     
-    function startUserEngage(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_U) public virtual override{
+    function startUserEngagement(uint256 _tokenId, uint256 _dataEngagement, uint256 _hashK_U) public virtual override{
         //Check if sender is the User of token and the State of token
         require(Secure_Token[_tokenId].user == msg.sender);    
         if((Secure_Token[_tokenId].timestamp + Secure_Token[_tokenId].timeout) > block.timestamp){
@@ -122,7 +121,7 @@ contract smartNFT_SC is ERC721,smartNFT{
         }
     }
     
-    function userEngage(uint256 _hashK_D) public virtual override{
+    function userEngagement(uint256 _hashK_D) public virtual override{
         uint256 _tokenId = tokenFromBCA(msg.sender);
         //Check if public key user-device exist from tokenID of BCA sender
         require(Secure_Token[_tokenId].dataEngagement != 0);
